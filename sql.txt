@@ -1,0 +1,1200 @@
+Application:SGO.exe
+ Object: "fAtrasoCli.AtrasoCli.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT EMPCODIGO 
+     , RECCODIGO 
+     , CLICODIGO 
+     , CTCNUMERO 
+     , BCOCODIGO 
+     , ENDFAT 
+     , ENDCOB 
+     , COBCODIGO 
+     , RECNRDOC 
+     , RECDTDOC 
+     , RECPARCELA 
+     , CUSCODIGO 
+     , FUNCODIGO 
+     , Cast(RECPCCOMISSAO as Numeric(14,2)) RECPCCOMISSAO 
+     , RECDTEMISSAO 
+     , RECDTVENCTO 
+     , RECDTPREVIS 
+     , RECVALOR 
+     , RECVALORABERTO 
+     , RECDTREMESSA 
+     , RECDTRETORNO 
+     , RECHISTORICO 
+     , RECCOMANDO 
+     , RECPRZPROT 
+     , STCODIGO 
+     , RECSITUACAO 
+     , RECORIGEM 
+     , RECNSNUMERO 
+     , RECTIPODOCTO 
+     , RECDTIMPBOLETO 
+     , COBSEQ 
+     , Receb.EMPCODIGO 
+  FROM Receb 
+ WHERE clicodigo      = ?          
+   AND recsituacao   <> 'C'
+   AND recValorAberto > 0.009 
+   AND recdtVencto    < ?           
+
+ UNION 
+ SELECT EMPCODIGO 
+      , RECCODIGO 
+      , CLICODIGO 
+      , CTCNUMERO 
+      , BCOCODIGO 
+      , ENDFAT 
+      , ENDCOB 
+      , COBCODIGO 
+      , RECNRDOC 
+      , RECDTDOC 
+      , RECPARCELA 
+      , CUSCODIGO 
+      , FUNCODIGO 
+      , Cast(RECPCCOMISSAO as Numeric(14,2)) 
+      , RECDTEMISSAO 
+      , RECDTVENCTO 
+      , RECDTPREVIS 
+      , RECVALOR 
+      , RECVALORABERTO 
+      , RECDTREMESSA 
+      , RECDTRETORNO 
+      , RECHISTORICO 
+      , RECCOMANDO 
+      , RECPRZPROT 
+      , STCODIGO 
+      , RECSITUACAO 
+      , RECORIGEM 
+      , RECNSNUMERO 
+      , RECTIPODOCTO 
+      , RECDTIMPBOLETO 
+      , COBSEQ 
+      , RecebP.EmpCodigo 
+   FROM RecebP 
+  WHERE clicodigo      = ?           
+    AND recsituacao   <> 'C'
+    AND recValorAberto > 0.009 
+   AND recdtVencto < ?            
+
+ ORDER BY 16 DESC
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPago.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEB 
+     , RECBX 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   AND Receb.RecCodigo = RecBx.RecCodigo 
+   AND clicodigo       = ?          
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEBP 
+     , RECBXP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   AND RecebP.RecCodigo = RecBxP.RecCodigo 
+   AND clicodigo        = ?           
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPagoAntecipado.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEB 
+     , RECBX 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   AND Receb.RecCodigo = RecBx.RecCodigo 
+   AND clicodigo       = ?          
+   AND recbx.rebdevolucao = 'A'
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEBP 
+     , RECBXP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   AND RecebP.RecCodigo = RecBxP.RecCodigo 
+   AND clicodigo        = ?           
+   AND RECBXP.rebdevolucao = 'A'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryCancelado.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALOR) VR 
+  FROM RECEB 
+ WHERE clicodigo     = ?          
+   AND recsituacao   = 'C'
+   AND not exists ( select 1 from reparcreceb where reparcreceb.reccodigo = receb.reccodigo )
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALOR) VR 
+  FROM RECEBP 
+ WHERE clicodigo     = ?           
+   AND recsituacao   = 'C'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryEmAtraso.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ WHERE clicodigo      = ?          
+   AND recdtvencto    < ?            
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera <> 'S'
+
+ UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ WHERE clicodigo      = ?           
+   AND recdtvencto    < ?             
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera <> 'S'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagar.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+ WHERE clicodigo=?           
+   AND recsituacao    <> 'C'
+   AND RecValorAberto  > 0.009 
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagarNormal.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recdtvencto   >= ?            
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+   and not exists ( select 1 from reparcreceb where reparcreceb.reparcnrdoc = receb.recnrdoc ) 
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagarReparc.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recdtvencto   >= ?            
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+   AND exists ( select 1 from reparcreceb where reparcreceb.reparcnrdoc = receb.recnrdoc )
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagarAtrasado.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recdtvencto    < ?            
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPagas.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT RECNRDOC 
+     , RECPARCELA 
+     , RECDTVENCTO 
+     , REBDTPAGTO as REBDTPAGTO 
+     , CAST( (REBDTPAGTO - RECDTVENCTO) AS FLOAT ) DIAS 
+     , SUM(RebValor - RebVrDesc + RebVrJuros) VRPAGO 
+     , RECBX.BCOCODIGO 
+     , Receb.RecHistorico 
+     , RecBx.RebObser 
+     , Receb.EmpCodigo
+  FROM Receb, RecBx 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   and Receb.RecCodigo = RecBx.RecCodigo 
+   and CliCodigo       = ?          
+   and recsituacao    <> 'C'
+
+GROUP BY RECNRDOC 
+       , RECPARCELA 
+       , RECDTVENCTO 
+       , REBDTPAGTO 
+       , RECBX.BCOCODIGO 
+       , Receb.RecHistorico 
+       , RecBx.RebObser 
+       , Receb.EmpCodigo 
+UNION ALL
+SELECT RECNRDOC 
+     , RECPARCELA 
+     , RECDTVENCTO 
+     , REBDTPAGTO 
+     , CAST( (REBDTPAGTO - RECDTVENCTO) AS FLOAT ) DIAS 
+     , SUM(RebValor - RebVrDesc + RebVrJuros) VRPAGO 
+     , RecBxP.BCOCODIGO 
+     , RecebP.RecHistorico 
+     , RecBxP.RebObser 
+     , RecebP.EmpCodigo 
+  FROM RecebP, RecBxP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   and RecebP.RecCodigo = RecBxP.RecCodigo 
+   and CliCodigo        = ?           
+   and recsituacao     <> 'C'
+
+GROUP BY RECNRDOC 
+       , RECPARCELA 
+       , RECDTVENCTO 
+       , REBDTPAGTO 
+       , RECBXP.BCOCODIGO 
+       , RecebP.RecHistorico 
+       , RecBxP.RebObser 
+       , Recebp.EmpCodigo 
+ORDER BY 4 DESC
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryCheques.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+     , EMPCODIGO 
+  FROM CHEQUE 
+ WHERE CLICODIGO   = ?          
+   AND (CHSITUACAO = 'A' or CHSITUACAO = 'D') 
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryChequeDev.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+  FROM CHEQUE 
+ WHERE CLICODIGO  = ?          
+   AND CHSITUACAO = 'D'
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryChequePre.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+ FROM CHEQUE 
+WHERE CLICODIGO   = ?          
+  AND CHSITUACAO  = 'A'
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPedContrato.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+select sum( PedVrTotal ) as Valor, 
+       count(1) as qtd
+  from Pedid 
+ where CliCodigo    = ?           
+   and PedSitPed    = 'A'
+   and PedLcFinanc <> 'N'
+   and ctcnumero is not null 
+   and PedDtBaixa is null 
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPedFaturar.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+select sum( PedVrTotal ) as Valor, 
+       count(1) as qtd
+  from Pedid 
+ where CliCodigo    = ?           
+   and PedSitPed    = 'A'
+   and PedLcFinanc <> 'N'
+   and ctcnumero is null 
+   and PedDtBaixa is null 
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryNfFaturar.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:23
+select sum( NfVrTotal ) as Valor 
+     , count(1) as qtd 
+  from Notas 
+ where CliCodigo    = ?           
+   and NfLcFinanc   = 'S'
+   and Notas.NfSit <> 'C'
+
+Application:SGO.exe
+ Object: "fAtrasoCli.AtrasoCli.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:23
+SELECT EMPCODIGO 
+     , RECCODIGO 
+     , CLICODIGO 
+     , CTCNUMERO 
+     , BCOCODIGO 
+     , ENDFAT 
+     , ENDCOB 
+     , COBCODIGO 
+     , RECNRDOC 
+     , RECDTDOC 
+     , RECPARCELA 
+     , CUSCODIGO 
+     , FUNCODIGO 
+     , Cast(RECPCCOMISSAO as Numeric(14,2)) RECPCCOMISSAO 
+     , RECDTEMISSAO 
+     , RECDTVENCTO 
+     , RECDTPREVIS 
+     , RECVALOR 
+     , RECVALORABERTO 
+     , RECDTREMESSA 
+     , RECDTRETORNO 
+     , RECHISTORICO 
+     , RECCOMANDO 
+     , RECPRZPROT 
+     , STCODIGO 
+     , RECSITUACAO 
+     , RECORIGEM 
+     , RECNSNUMERO 
+     , RECTIPODOCTO 
+     , RECDTIMPBOLETO 
+     , COBSEQ 
+     , Receb.EMPCODIGO 
+  FROM Receb 
+ WHERE clicodigo      = ?          
+   AND recsituacao   <> 'C'
+   AND recValorAberto > 0.009 
+   AND recdtVencto    < ?           
+
+ UNION 
+ SELECT EMPCODIGO 
+      , RECCODIGO 
+      , CLICODIGO 
+      , CTCNUMERO 
+      , BCOCODIGO 
+      , ENDFAT 
+      , ENDCOB 
+      , COBCODIGO 
+      , RECNRDOC 
+      , RECDTDOC 
+      , RECPARCELA 
+      , CUSCODIGO 
+      , FUNCODIGO 
+      , Cast(RECPCCOMISSAO as Numeric(14,2)) 
+      , RECDTEMISSAO 
+      , RECDTVENCTO 
+      , RECDTPREVIS 
+      , RECVALOR 
+      , RECVALORABERTO 
+      , RECDTREMESSA 
+      , RECDTRETORNO 
+      , RECHISTORICO 
+      , RECCOMANDO 
+      , RECPRZPROT 
+      , STCODIGO 
+      , RECSITUACAO 
+      , RECORIGEM 
+      , RECNSNUMERO 
+      , RECTIPODOCTO 
+      , RECDTIMPBOLETO 
+      , COBSEQ 
+      , RecebP.EmpCodigo 
+   FROM RecebP 
+  WHERE clicodigo      = ?           
+    AND recsituacao   <> 'C'
+    AND recValorAberto > 0.009 
+   AND recdtVencto < ?            
+
+ ORDER BY 16 DESC
+
+Params[0]='400'
+Params[1]='16/06/2022'
+Params[2]='400'
+Params[3]='16/06/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.EndCli.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select * from EndCli
+where CliCodigo = ?          and EndCob = 'S'
+
+Application:SGO.exe
+ Object: "fAtrasoCli.EndCli.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+select * from EndCli
+where CliCodigo = ?          and EndCob = 'S'
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.Ctato.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select * from Ctato
+where CliCodigo = ?         
+order by CtoCodigo
+
+Application:SGO.exe
+ Object: "fAtrasoCli.Ctato.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+select * from Ctato
+where CliCodigo = ?         
+order by CtoCodigo
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPago.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEB 
+     , RECBX 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   AND Receb.RecCodigo = RecBx.RecCodigo 
+   AND clicodigo       = ?          
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEBP 
+     , RECBXP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   AND RecebP.RecCodigo = RecBxP.RecCodigo 
+   AND clicodigo        = ?           
+
+
+Params[0]='400'
+Params[1]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPagoAntecipado.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEB 
+     , RECBX 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   AND Receb.RecCodigo = RecBx.RecCodigo 
+   AND clicodigo       = ?          
+   AND recbx.rebdevolucao = 'A'
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RebValor-RebVrDesc+RebVrJuros) VR 
+  FROM RECEBP 
+     , RECBXP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   AND RecebP.RecCodigo = RecBxP.RecCodigo 
+   AND clicodigo        = ?           
+   AND RECBXP.rebdevolucao = 'A'
+
+
+Params[0]='400'
+Params[1]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagar.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+ WHERE clicodigo=?           
+   AND recsituacao    <> 'C'
+   AND RecValorAberto  > 0.009 
+
+
+Params[0]='400'
+Params[1]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagarNormal.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recdtvencto   >= ?            
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+   and not exists ( select 1 from reparcreceb where reparcreceb.reparcnrdoc = receb.recnrdoc ) 
+
+
+Params[0]='400'
+Params[1]='16/06/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryAPagarReparc.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+ WHERE clicodigo      = ?          
+   AND recdtvencto   >= ?            
+   AND recsituacao   <>'C'
+   AND RecValorAberto > 0.009 
+   AND exists ( select 1 from reparcreceb where reparcreceb.reparcnrdoc = receb.recnrdoc )
+
+
+Params[0]='400'
+Params[1]='16/06/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryEmAtraso.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ WHERE clicodigo      = ?          
+   AND recdtvencto    < ?            
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera <> 'S'
+
+ UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ WHERE clicodigo      = ?           
+   AND recdtvencto    < ?             
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera <> 'S'
+
+
+Params[0]='400'
+Params[1]='16/06/2022'
+Params[2]='400'
+Params[3]='16/06/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryCancelado.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALOR) VR 
+  FROM RECEB 
+ WHERE clicodigo     = ?          
+   AND recsituacao   = 'C'
+   AND not exists ( select 1 from reparcreceb where reparcreceb.reccodigo = receb.reccodigo )
+
+UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALOR) VR 
+  FROM RECEBP 
+ WHERE clicodigo     = ?           
+   AND recsituacao   = 'C'
+
+
+Params[0]='400'
+Params[1]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPedContrato.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+select sum( PedVrTotal ) as Valor, 
+       count(1) as qtd
+  from Pedid 
+ where CliCodigo    = ?           
+   and PedSitPed    = 'A'
+   and PedLcFinanc <> 'N'
+   and ctcnumero is not null 
+   and PedDtBaixa is null 
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPedFaturar.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+select sum( PedVrTotal ) as Valor, 
+       count(1) as qtd
+  from Pedid 
+ where CliCodigo    = ?           
+   and PedSitPed    = 'A'
+   and PedLcFinanc <> 'N'
+   and ctcnumero is null 
+   and PedDtBaixa is null 
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryNfFaturar.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+select sum( NfVrTotal ) as Valor 
+     , count(1) as qtd 
+  from Notas 
+ where CliCodigo    = ?           
+   and NfLcFinanc   = 'S'
+   and Notas.NfSit <> 'C'
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryCheques.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+     , EMPCODIGO 
+  FROM CHEQUE 
+ WHERE CLICODIGO   = ?          
+   AND (CHSITUACAO = 'A' or CHSITUACAO = 'D') 
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryChequeDev.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+  FROM CHEQUE 
+ WHERE CLICODIGO  = ?          
+   AND CHSITUACAO = 'D'
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryChequePre.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT CHNRCHEQUE 
+     , CHDTEMIS 
+     , CHDTVENCTO 
+     , CHVRCHEQUE 
+     , CHSITUACAO 
+ FROM CHEQUE 
+WHERE CLICODIGO   = ?          
+  AND CHSITUACAO  = 'A'
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryDivida.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ WHERE clicodigo      = ?          
+   AND recdtvencto    < ?            
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera = 'S'
+
+ UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ WHERE clicodigo      = ?           
+   AND recdtvencto    < ?             
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera = 'S'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QryDivida.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:24
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEB 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ WHERE clicodigo      = ?          
+   AND recdtvencto    < ?            
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera = 'S'
+
+ UNION ALL 
+SELECT COUNT(1) QTDE 
+     , SUM(RECVALORABERTO) VR 
+  FROM RECEBP 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ WHERE clicodigo      = ?           
+   AND recdtvencto    < ?             
+   AND recsituacao   <> 'C'
+   AND RecValorAberto > 0.009 
+   AND st.stdesconsidera = 'S'
+
+
+Params[0]='400'
+Params[1]='16/06/2022'
+Params[2]='400'
+Params[3]='16/06/2022'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='C'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='D'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='C'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:24
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='D'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "fDtGeral.RecClien.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:24
+select sum(receb.recvaloraberto) valor 
+  from receb 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ where receb.clicodigo      = ?          
+   and receb.recsituacao   <> 'C'
+   and receb.recvaloraberto > 0 
+   AND st.stdesconsidera <> 'S'
+union all 
+select sum(recebp.recvaloraberto) valor 
+  from recebp 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ where recebp.clicodigo      = ?           
+   and recebp.recsituacao   <> 'C'
+   and recebp.recvaloraberto > 0 
+   AND st.stdesconsidera <> 'S'
+union all 
+select sum(pedid.pedvrtotal) valor 
+  from pedid 
+ where pedid.clicodigo    = ?           
+   and pedid.pedsitped    = 'A'
+   and pedid.pedlcfinanc <> 'N'
+   and pedid.ctcnumero   IS NULL 
+union all
+select sum(notas.nfvrtotal) valor
+from notas
+where notas.clicodigo = ?          
+  and notas.nfsit <> 'C'
+  and notas.nflcfinanc = 'S'
+union all 
+select sum(cheque.chvrcheque) valor 
+  from cheque 
+ where cheque.clicodigo  = ?           
+  and cheque.chsituacao in ('A', 'D') 
+
+Application:SGO.exe
+ Object: "fDtGeral.RecClien.SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:24
+select sum(receb.recvaloraberto) valor 
+  from receb 
+  LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+ where receb.clicodigo      = ?          
+   and receb.recsituacao   <> 'C'
+   and receb.recvaloraberto > 0 
+   AND st.stdesconsidera <> 'S'
+union all 
+select sum(recebp.recvaloraberto) valor 
+  from recebp 
+  LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+ where recebp.clicodigo      = ?           
+   and recebp.recsituacao   <> 'C'
+   and recebp.recvaloraberto > 0 
+   AND st.stdesconsidera <> 'S'
+union all 
+select sum(pedid.pedvrtotal) valor 
+  from pedid 
+ where pedid.clicodigo    = ?           
+   and pedid.pedsitped    = 'A'
+   and pedid.pedlcfinanc <> 'N'
+   and pedid.ctcnumero   IS NULL 
+union all
+select sum(notas.nfvrtotal) valor
+from notas
+where notas.clicodigo = ?          
+  and notas.nfsit <> 'C'
+  and notas.nflcfinanc = 'S'
+union all 
+select sum(cheque.chvrcheque) valor 
+  from cheque 
+ where cheque.clicodigo  = ?           
+  and cheque.chsituacao in ('A', 'D') 
+
+Params[0]='400'
+Params[1]='400'
+Params[2]='400'
+Params[3]='400'
+Params[4]='400'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+select sum(cre.crevalor) vrcredito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='C'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+select sum(cre.crevalor) vrdebito
+  from credcli cre
+ where cre.clicodigo = ?         
+   and cre.cretipo   = ?        
+   and cre.credtcad <= ?    
+  and cre.cretipomov = 'C'
+   and cre.creorigem in ('D','R','L','RP','RA','RAP','DV','DVP','N','RC','DVC','EST','ASP','EAP')
+
+Params[0]='400'
+Params[1]='D'
+Params[2]='16/06/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.QryPagas.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:25
+SELECT RECNRDOC 
+     , RECPARCELA 
+     , RECDTVENCTO 
+     , REBDTPAGTO as REBDTPAGTO 
+     , CAST( (REBDTPAGTO - RECDTVENCTO) AS FLOAT ) DIAS 
+     , SUM(RebValor - RebVrDesc + RebVrJuros) VRPAGO 
+     , RECBX.BCOCODIGO 
+     , Receb.RecHistorico 
+     , RecBx.RebObser 
+     , Receb.EmpCodigo
+  FROM Receb, RecBx 
+ WHERE Receb.EmpCodigo = RecBx.EmpCodigo 
+   and Receb.RecCodigo = RecBx.RecCodigo 
+   and CliCodigo       = ?          
+   and recsituacao    <> 'C'
+
+GROUP BY RECNRDOC 
+       , RECPARCELA 
+       , RECDTVENCTO 
+       , REBDTPAGTO 
+       , RECBX.BCOCODIGO 
+       , Receb.RecHistorico 
+       , RecBx.RebObser 
+       , Receb.EmpCodigo 
+UNION ALL
+SELECT RECNRDOC 
+     , RECPARCELA 
+     , RECDTVENCTO 
+     , REBDTPAGTO 
+     , CAST( (REBDTPAGTO - RECDTVENCTO) AS FLOAT ) DIAS 
+     , SUM(RebValor - RebVrDesc + RebVrJuros) VRPAGO 
+     , RecBxP.BCOCODIGO 
+     , RecebP.RecHistorico 
+     , RecBxP.RebObser 
+     , RecebP.EmpCodigo 
+  FROM RecebP, RecBxP 
+ WHERE RecebP.EmpCodigo = RecBxP.EmpCodigo 
+   and RecebP.RecCodigo = RecBxP.RecCodigo 
+   and CliCodigo        = ?           
+   and recsituacao     <> 'C'
+
+GROUP BY RECNRDOC 
+       , RECPARCELA 
+       , RECDTVENCTO 
+       , REBDTPAGTO 
+       , RECBXP.BCOCODIGO 
+       , RecebP.RecHistorico 
+       , RecBxP.RebObser 
+       , Recebp.EmpCodigo 
+ORDER BY 4 DESC
+
+Params[0]='400'
+Params[1]='400'
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+select GclCodigo from Clien c
+  Where
+c.CliCodigo = 400
+
+Application:SGO.exe
+ Object: "SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+select GclCodigo from Clien c
+  Where
+c.CliCodigo = 400
+
+Application:SGO.exe
+ Object: "fDtMod.QryTmp.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+ SELECT COALESCE(CAST(CLIENINFO.VALOR AS INTEGER), 0) DIAS 
+ FROM CLIENINFO 
+ WHERE CLIENINFO.CHAVE   = 'ES_DIASATRASO' 
+ AND CLIENINFO.CLICODIGO = ?          
+
+Application:SGO.exe
+ Object: "fDtMod.QryTmp.SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+ SELECT COALESCE(CAST(CLIENINFO.VALOR AS INTEGER), 0) DIAS 
+ FROM CLIENINFO 
+ WHERE CLIENINFO.CHAVE   = 'ES_DIASATRASO' 
+ AND CLIENINFO.CLICODIGO = ?          
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fDtGeral.RecAtraso.SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+SELECT 'R', RecDtVencto, RecValor, RecValorAberto, CliDtLibVenda, CliDiasAtraso
+FROM Clien LEFT JOIN Receb ON (Receb.CliCodigo = Clien.CliCodigo)
+LEFT JOIN StatusTit st ON (st.stcodigo = receb.stcodigo)
+WHERE Clien.CliCodigo = ?          
+and RecDtVencto < ?    
+and  RecSituacao <> 'C' and RecValorAberto > 0.001
+and st.stdesconsidera <> 'S'
+UNION
+SELECT 'P', RecDtVencto, RecValor, RecValorAberto, CliDtLibVenda, CliDiasAtraso
+FROM Clien LEFT JOIN RecebP ON (RecebP.CliCodigo = Clien.CliCodigo)
+LEFT JOIN StatusTit st ON (st.stcodigo = recebp.stcodigo)
+WHERE Clien.CliCodigo = ?           
+and RecDtVencto < ?     
+and  RecSituacao <> 'C' and RecValorAberto > 0.001
+and st.stdesconsidera <> 'S'
+
+Params[0]='400'
+Params[1]='17/05/2022'
+Params[2]='400'
+Params[3]='17/05/2022'
+Application:SGO.exe
+ Object: "fAtrasoCli.QrySitCli.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+SELECT situacao.sitdescricao Situacao
+FROM SitCli LEFT JOIN situacao on SitCli.sitcodigo = Situacao.sitcodigo
+WHERE CliCodigo = ?         
+ORDER BY SitData DESC, SitSeq DESC
+
+Application:SGO.exe
+ Object: "fAtrasoCli.QrySitCli.SelectQuery"
+ Operation:TrID=113208228 Execute query:>> Time 16/06/2022 21:15:25
+SELECT situacao.sitdescricao Situacao
+FROM SitCli LEFT JOIN situacao on SitCli.sitcodigo = Situacao.sitcodigo
+WHERE CliCodigo = ?         
+ORDER BY SitData DESC, SitSeq DESC
+
+Params[0]='400'
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+SELECT SUM((rb.RebDtPagto - receb.RecDtPrevis) * rb.RebValor) Atraso 
+     , SUM(rb.RebDtPagto - receb.RecDtPrevis) Atraso2 
+     , SUM(rb.RebValor) Qtde 
+     , COUNT(1) Qtde2
+  FROM Clien cl 
+       LEFT JOIN Receb receb ON cl.CliCodigo = receb.CliCodigo
+       LEFT JOIN RecBx rb ON receb.EmpCodigo = rb.EmpCodigo AND receb.RecCodigo = rb.RecCodigo
+ WHERE cl.CliCodigo    = 400
+   and receb.RecSituacao <> 'C'
+   and rb.Rebdevolucao <> 'S'
+
+UNION ALL
+SELECT SUM((rb.RebDtPagto - recebp.RecDtPrevis) * rb.RebValor) 
+     , SUM(rb.RebDtPagto - recebp.RecDtPrevis) 
+     , SUM(recebp.RecValor) 
+     , COUNT(1) 
+  FROM Clien cl LEFT JOIN RecebP recebp ON cl.CliCodigo = recebp.CliCodigo
+                LEFT JOIN RecBxP rb ON recebp.EmpCodigo = rb.EmpCodigo AND recebp.RecCodigo = rb.RecCodigo
+ WHERE cl.CliCodigo    = 400
+   and recebp.RecSituacao <> 'C'
+   and rb.Rebdevolucao <> 'S'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:25
+SELECT SUM((rb.RebDtPagto - receb.RecDtPrevis) * rb.RebValor) Atraso 
+     , SUM(rb.RebDtPagto - receb.RecDtPrevis) Atraso2 
+     , SUM(rb.RebValor) Qtde 
+     , COUNT(1) Qtde2
+  FROM Clien cl 
+       LEFT JOIN Receb receb ON cl.CliCodigo = receb.CliCodigo
+       LEFT JOIN RecBx rb ON receb.EmpCodigo = rb.EmpCodigo AND receb.RecCodigo = rb.RecCodigo
+ WHERE cl.CliCodigo    = 400
+   and receb.RecSituacao <> 'C'
+   and rb.Rebdevolucao <> 'S'
+
+UNION ALL
+SELECT SUM((rb.RebDtPagto - recebp.RecDtPrevis) * rb.RebValor) 
+     , SUM(rb.RebDtPagto - recebp.RecDtPrevis) 
+     , SUM(recebp.RecValor) 
+     , COUNT(1) 
+  FROM Clien cl LEFT JOIN RecebP recebp ON cl.CliCodigo = recebp.CliCodigo
+                LEFT JOIN RecBxP rb ON recebp.EmpCodigo = rb.EmpCodigo AND recebp.RecCodigo = rb.RecCodigo
+ WHERE cl.CliCodigo    = 400
+   and recebp.RecSituacao <> 'C'
+   and rb.Rebdevolucao <> 'S'
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+select MIN(NfDtEmis) PrimeiraVenda, MAX(NfDtEmis) UltimaVenda, COUNT(1) Qtdade,
+MAX(NfVrTotal) MaiorVenda, SUM(NfVrTotal) / COUNT(1) MediaVenda, SUM(NfVrTotal) TotalVenda
+FROM Notas LEFT JOIN TbFis ON (Notas.FisCodigo1 = TbFis.FisCodigo)
+where clicodigo=400
+and NfSit <> 'C'
+and (TbFis.FisTpNatOp = 'V' or TbFis.FisTpNatOp = 'R' or TbFis.FisTpNatOp = 'VC'
+ or (TbFis.FisTpNatOp = 'OS' and TbFis.FisLcFinan = 'S'))
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:25
+select MIN(NfDtEmis) PrimeiraVenda, MAX(NfDtEmis) UltimaVenda, COUNT(1) Qtdade,
+MAX(NfVrTotal) MaiorVenda, SUM(NfVrTotal) / COUNT(1) MediaVenda, SUM(NfVrTotal) TotalVenda
+FROM Notas LEFT JOIN TbFis ON (Notas.FisCodigo1 = TbFis.FisCodigo)
+where clicodigo=400
+and NfSit <> 'C'
+and (TbFis.FisTpNatOp = 'V' or TbFis.FisTpNatOp = 'R' or TbFis.FisTpNatOp = 'VC'
+ or (TbFis.FisTpNatOp = 'OS' and TbFis.FisLcFinan = 'S'))
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:Prepare:>> Time 16/06/2022 21:15:25
+select MIN(PedDtEmis) PrimeiraVenda, MAX(PedDtEmis) UltimaVenda, COUNT(1) Qtdade,
+MAX(PedVrTotal) MaiorVenda, SUM(PedVrTotal) / COUNT(1) MediaVenda, SUM(PedVrTotal) TotalVenda
+FROM Pedid LEFT JOIN TbFis ON (Pedid.FisCodigo1 = TbFis.FisCodigo)
+Where clicodigo=400
+and PedSitPed <> 'C'
+and (TbFis.FisTpNatOp = 'V' or TbFis.FisTpNatOp = 'R' or TbFis.FisTpNatOp = 'VC'
+ or (TbFis.FisTpNatOp = 'OS' and TbFis.FisLcFinan = 'S'))
+
+
+Application:SGO.exe
+ Object: "fAtrasoCli.LQryTmp.SelectQuery"
+ Operation:TrID=113208227 Execute query:>> Time 16/06/2022 21:15:26
+select MIN(PedDtEmis) PrimeiraVenda, MAX(PedDtEmis) UltimaVenda, COUNT(1) Qtdade,
+MAX(PedVrTotal) MaiorVenda, SUM(PedVrTotal) / COUNT(1) MediaVenda, SUM(PedVrTotal) TotalVenda
+FROM Pedid LEFT JOIN TbFis ON (Pedid.FisCodigo1 = TbFis.FisCodigo)
+Where clicodigo=400
+and PedSitPed <> 'C'
+and (TbFis.FisTpNatOp = 'V' or TbFis.FisTpNatOp = 'R' or TbFis.FisTpNatOp = 'VC'
+ or (TbFis.FisTpNatOp = 'OS' and TbFis.FisLcFinan = 'S'))
+
+
