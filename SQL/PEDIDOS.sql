@@ -1,18 +1,12 @@
-WITH PED AS(
-SELECT ID_PEDIDO,
-        CLICODIGO,
-         PEDDTEMIS,
-          PEDDTBAIXA,
-           PEDORIGEM
-            FROM PEDID P
-             WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023')
-          
-          
-          SELECT PD.ID_PEDIDO,
-                  CLICODIGO,
-                   PEDDTEMIS,
-                    PEDDTBAIXA,
-                     PEDORIGEM,
-                      PCTNUMERO
-                       FROM PDPRD PD
-                        INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
+WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
+    
+    PED AS (SELECT DISTINCT ID_PEDIDO,
+                    PEDCODIGO,
+                     CLICODIGO,
+                      PEDDTEMIS,
+                       PEDDTBAIXA
+                            FROM PEDID P
+                             INNER JOIN FIS ON P.FISCODIGO1=FIS.FISCODIGO
+                               WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023' AND PEDSITPED<>'C')
+                               
+SELECT ID_PEDIDO FROM PED                               

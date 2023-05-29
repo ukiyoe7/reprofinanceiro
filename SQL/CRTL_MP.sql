@@ -8,7 +8,7 @@ WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
                        PEDDTBAIXA
                             FROM PEDID P
                              INNER JOIN FIS ON P.FISCODIGO1=FIS.FISCODIGO
-                               WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023' AND PEDSITPED<>'C' ),
+                               WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '01.04.2023' AND PEDSITPED<>'C' ),
                                
       PROD AS (SELECT PROCODIGO,IIF(PROCODIGO2 IS NULL,PROCODIGO,PROCODIGO2)CHAVE,PROTIPO FROM PRODU WHERE PROTIPO='F'),
       
@@ -16,8 +16,15 @@ WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
       
   /* CONTROL */   
   
-  CONTROL AS (SELECT A.ID_PEDIDO,CAST(REPLACE(APOBS,'Pedido ID: ','') AS INT) PCONTROL  FROM ACOPED A
-                                     INNER JOIN PED P ON A.ID_PEDIDO=P.ID_PEDIDO WHERE LPCODIGO=1837),
+CONTROLA  AS(
+SELECT A.ID_PEDIDO,MAX(APCODIGO)APCODIGO FROM ACOPED A
+            INNER JOIN (SELECT ID_PEDIDO FROM PEDID WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '01.04.2023') P 
+             ON A.ID_PEDIDO=P.ID_PEDIDO WHERE LPCODIGO=1837 
+              GROUP BY 1),
+
+ CONTROLB AS (SELECT A.ID_PEDIDO,CAST(REPLACE(APOBS,'Pedido ID: ','') AS INT) PCONTROL FROM ACOPED A
+            INNER JOIN CONTROLA CA 
+             ON A.ID_PEDIDO=CA.ID_PEDIDO AND A.APCODIGO=CA.APCODIGO),
       
       MP AS (
        SELECT
@@ -46,9 +53,9 @@ WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
                              SUM(PDPQTDADE)QTD,
                               SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
                                 FROM PDPRD PD
-                                 INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
-                                  INNER JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                   LEFT JOIN CONTROL CTL ON PD.ID_PEDIDO=CTL.ID_PEDIDO
+                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
+                                   INNER JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
+                                    LEFT JOIN CONTROLB CTL ON PD.ID_PEDIDO=CTL.ID_PEDIDO
                                     GROUP BY 1,2,3,4,5,6,7,8,9 ORDER BY ID_PEDIDO DESC)
                                     
                                     
