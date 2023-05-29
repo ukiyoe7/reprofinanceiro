@@ -41,20 +41,22 @@ SELECT PE.ID_PEDIDO,A.ID_PEDIDO PCT_REL_ID_PEDIDO FROM PEDID A
                          
       DF AS  (
       SELECT PD.ID_PEDIDO,
-                 CLICODIGO,
-                  PD.EMPCODIGO,
-                   PEDDTEMIS,
-                    PEDDTBAIXA,
-                     PD.PROCODIGO,
-                      PR.CHAVE,
-                       PDPDESCRICAO,
+              PCT_REL_ID_PEDIDO,
+               CLICODIGO,
+                PD.EMPCODIGO,
+                 PEDDTEMIS,
+                  PEDDTBAIXA,
+                   PD.PROCODIGO,
+                    PR.CHAVE,
+                     PDPDESCRICAO,
                              SUM(PDPQTDADE)QTD,
                               SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
                                 FROM PDPRD PD
                                   INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                    INNER JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                    
-                                    GROUP BY 1,2,3,4,5,6,7,8 ORDER BY ID_PEDIDO DESC)
+                                    LEFT JOIN PED_PCT_REL PCT_REL ON PCT_REL.ID_PEDIDO=PD.ID_PEDIDO
+                                     WHERE PCTNUMERO IS NOT NULL
+                                     GROUP BY 1,2,3,4,5,6,7,8,9 ORDER BY ID_PEDIDO DESC)
                                     
                                     
                                     
@@ -71,13 +73,12 @@ SELECT DF.ID_PEDIDO,
                    MATERIA_PRIMA,
                     MATERIA_PRIMA_CHAVE,
                      PREPCOMEDIO CUSTO_MEDIO,
-                       MP_QTD,
+                      MP_QTD,
                        SUM(PREPCOMEDIO*QTD)CUSTO_MEDIO_TOTAL
                                FROM DF
-                                
-                                 LEFT JOIN PED_PCT_REL PCT_REL ON DF.ID_PEDIDO=PCT_REL.ID_PEDIDO
-                                  LEFT JOIN MP M ON M.ID_PEDIDO=PCT_REL.PCT_REL_ID_PEDIDO
-                                   LEFT JOIN PRECO_MEDIO PM ON DF.PROCODIGO=M.MATERIA_PRIMA
+                                  LEFT JOIN MP M ON M.ID_PEDIDO=DF.PCT_REL_ID_PEDIDO
+                                   LEFT JOIN PRECO_MEDIO PM ON PM.PCODIGO=M.MATERIA_PRIMA
+                                    WHERE MATERIA_PRIMA IS NOT NULL
                                     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
                                 
                                 

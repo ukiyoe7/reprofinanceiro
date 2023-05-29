@@ -28,8 +28,7 @@ WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
                   INNER JOIN REQUI REQ ON PDC.PDCCODIGO = REQ.PDCCODIGO AND PDC.EMPCODIGO = REQ.EMPCODIGO
                    INNER JOIN REQPRO RP ON RP.REQCODIGO = REQ.REQCODIGO AND RP.EMPCODIGO = REQ.EMPCODIGO
                     INNER JOIN (SELECT PROCODIGO,PROCODIGO2 FROM PRODU WHERE PROTIPO IN ('F','E','P'))PR ON RP.PROCODIGO=PR.PROCODIGO
-                    GROUP BY 1,2,3,4,5
-                    ),
+                    GROUP BY 1,2,3,4,5),
                          
       DF AS  (
       SELECT PD.ID_PEDIDO,
@@ -67,7 +66,7 @@ SELECT DF.ID_PEDIDO,
                                 LEFT JOIN MP M ON M.ID_PEDIDO=DF.ID_PEDIDO
                                  LEFT JOIN PRECO_MEDIO PM ON M.MATERIA_PRIMA=PM.PCODIGO
                                   
-                                  WHERE  MATERIA_PRIMA IS NOT NULL
+                                 -- WHERE  MATERIA_PRIMA IS NOT NULL
                                    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
                                 
                                 

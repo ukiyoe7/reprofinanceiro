@@ -13,6 +13,7 @@ WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
     
     PED AS (SELECT ID_PEDIDO,
                     PEDCODIGO,
+                     REPLACE(PEDCODIGO,'.001','.000') PEDIDO_REL,
                      CLICODIGO,
                       PEDDTEMIS,
                        PEDDTBAIXA
@@ -164,6 +165,58 @@ SELECT PCC.ID_PEDIDO,
                                   WHERE PCONTROL IS NOT NULL
                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13),  
                                   
+-- PACOTES
+
+  /* PEDIDO RELACIONADO PACOTE */  
+  
+PED_PCT_REL  AS(
+SELECT PE.ID_PEDIDO,A.ID_PEDIDO PCT_REL_ID_PEDIDO FROM PEDID A
+            INNER JOIN PED PE ON A.PEDCODIGO=PE.PEDIDO_REL AND A.CLICODIGO=PE.CLICODIGO
+            INNER JOIN (SELECT ID_PEDIDO FROM PEDID WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023') P 
+             ON A.ID_PEDIDO=P.ID_PEDIDO),
+                                  
+                                  
+P_PACOTES AS  (
+      SELECT PD.ID_PEDIDO,
+              PCT_REL_ID_PEDIDO,
+               CLICODIGO,
+                PD.EMPCODIGO,
+                 PEDDTEMIS,
+                  PEDDTBAIXA,
+                   PD.PROCODIGO,
+                    PR.CHAVE,
+                     PDPDESCRICAO,
+                             SUM(PDPQTDADE)QTD,
+                              SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
+                                FROM PDPRD PD
+                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
+                                   INNER JOIN PROD_F PR ON PD.PROCODIGO=PR.PROCODIGO
+                                    LEFT JOIN PED_PCT_REL PCT_REL ON PCT_REL.ID_PEDIDO=PD.ID_PEDIDO
+                                     WHERE PCTNUMERO IS NOT NULL
+                                     GROUP BY 1,2,3,4,5,6,7,8,9 ORDER BY ID_PEDIDO DESC),
+                                    
+                                    
+P_PACOTES_2 AS (                                    
+SELECT PCT.ID_PEDIDO,
+         CLICODIGO,
+          EMPCODIGO,
+           PEDDTEMIS,
+            PEDDTBAIXA,
+             PROCODIGO,
+              CHAVE,
+               PDPDESCRICAO,
+                QTD,
+                 VRVENDA,
+                   MATERIA_PRIMA,
+                    MATERIA_PRIMA_CHAVE,
+                     PREPCOMEDIO CUSTO_MEDIO,
+                      SUM(MP_QTD) MP_QTD,
+                       SUM(PREPCOMEDIO*QTD)CUSTO_MEDIO_TOTAL
+                               FROM P_PACOTES PCT
+                                  LEFT JOIN MP M ON M.ID_PEDIDO=PCT.PCT_REL_ID_PEDIDO
+                                   LEFT JOIN PRECO_MEDIO PM ON PM.PCODIGO=M.MATERIA_PRIMA
+                                    WHERE MATERIA_PRIMA IS NOT NULL
+                                    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13),                                  
                                   
 -- SERVIÇOS     
                                
@@ -206,6 +259,8 @@ UNION
 SELECT * FROM LDLP
 UNION
 SELECT * FROM CONTROL
+UNION
+SELECT * FROM P_PACOTES_2
 UNION
 SELECT * FROM SERV
 

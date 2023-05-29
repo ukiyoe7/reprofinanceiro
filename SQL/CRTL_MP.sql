@@ -41,7 +41,7 @@ SELECT A.ID_PEDIDO,MAX(APCODIGO)APCODIGO FROM ACOPED A
                     INNER JOIN (SELECT PROCODIGO FROM PRODU WHERE PROTIPO IN ('F','E','P'))PR ON RP.PROCODIGO=PR.PROCODIGO),
                          
       DF AS  (
-      SELECT PD.ID_PEDIDO,
+       SELECT PD.ID_PEDIDO,
                 PCONTROL,
                  CLICODIGO,
                   PD.EMPCODIGO,
@@ -56,7 +56,7 @@ SELECT A.ID_PEDIDO,MAX(APCODIGO)APCODIGO FROM ACOPED A
                                   INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                    INNER JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
                                     LEFT JOIN CONTROLB CTL ON PD.ID_PEDIDO=CTL.ID_PEDIDO
-                                    GROUP BY 1,2,3,4,5,6,7,8,9,10 ORDER BY ID_PEDIDO DESC)
+                                     GROUP BY 1,2,3,4,5,6,7,8,9,10 ORDER BY ID_PEDIDO DESC)
                                     
                                     
                                     
