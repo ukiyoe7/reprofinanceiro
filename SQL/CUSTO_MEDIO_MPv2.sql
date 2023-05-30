@@ -8,18 +8,23 @@
 
 WITH FIS AS (SELECT FISCODIGO FROM TBFIS WHERE FISTPNATOP IN ('V','R','SR')),
 
+-- PERIODO DOS PEDIDOS
+
+PEDID_DATE AS (SELECT ID_PEDIDO FROM PEDID WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023'),
+
 
 -- PEDIDOS DE VENDA POR DATA DE EMISSÃO EXCETO CANCELADOS
     
-    PED AS (SELECT ID_PEDIDO,
+    PED AS (SELECT P.ID_PEDIDO,
                     PEDCODIGO,
                      REPLACE(PEDCODIGO,'.001','.000') PEDIDO_REL,
-                     CLICODIGO,
-                      PEDDTEMIS,
-                       PEDDTBAIXA
+                      CLICODIGO,
+                       PEDDTEMIS,
+                        PEDDTBAIXA
                             FROM PEDID P
                              INNER JOIN FIS ON P.FISCODIGO1=FIS.FISCODIGO
-                               WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023' AND PEDSITPED<>'C' ),
+                              INNER JOIN PEDID_DATE PT ON P.ID_PEDIDO=PT.ID_PEDIDO
+                               WHERE  PEDSITPED<>'C' ),
                                
       PRECO_MEDIO AS (SELECT PROCODIGO PCODIGO, PREPCOMEDIO FROM PREMP WHERE EMPCODIGO=1),
       
@@ -114,8 +119,7 @@ LDLP AS( SELECT DFF.*,
                                   
 CONTROLA  AS(
 SELECT A.ID_PEDIDO,MAX(APCODIGO)APCODIGO FROM ACOPED A
-            INNER JOIN (SELECT ID_PEDIDO FROM PEDID WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023') P 
-             ON A.ID_PEDIDO=P.ID_PEDIDO WHERE LPCODIGO=1837 
+            INNER JOIN PEDID_DATE PT ON A.ID_PEDIDO=PT.ID_PEDIDO WHERE LPCODIGO=1837 
               GROUP BY 1),
 
  CONTROLB AS (SELECT A.ID_PEDIDO,CAST(REPLACE(APOBS,'Pedido ID: ','') AS INT) PCONTROL FROM ACOPED A
@@ -153,17 +157,16 @@ SELECT PCC.ID_PEDIDO,
                          PDPDESCRICAO,
                            QTD,
                             VRVENDA,
-               MATERIA_PRIMA,
-                  MATERIA_PRIMA_CHAVE,
-                    PREPCOMEDIO CUSTO_MEDIO,
-                     SUM(MP_QTD) MP_QTD,
-                      SUM(PREPCOMEDIO*QTD)CUSTO_MEDIO_TOTAL
-                               FROM PEDIDOS_CONTROL PCC
-                                LEFT JOIN MP M ON M.ID_PEDIDO=PCC.PCONTROL
-                                 LEFT JOIN PRECO_MEDIO PM ON PCC.PROCODIGO=PM.PCODIGO
-                                 
-                                  WHERE PCONTROL IS NOT NULL
-                                  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13),  
+                             MATERIA_PRIMA,
+                              MATERIA_PRIMA_CHAVE,
+                               PREPCOMEDIO CUSTO_MEDIO,
+                                SUM(MP_QTD) MP_QTD,
+                                 SUM(PREPCOMEDIO*QTD)CUSTO_MEDIO_TOTAL
+                                  FROM PEDIDOS_CONTROL PCC
+                                   LEFT JOIN MP M ON M.ID_PEDIDO=PCC.PCONTROL
+                                    LEFT JOIN PRECO_MEDIO PM ON PCC.PROCODIGO=PM.PCODIGO
+                                     WHERE PCONTROL IS NOT NULL
+                                      GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13),  
                                   
 -- PACOTES
 
@@ -172,8 +175,7 @@ SELECT PCC.ID_PEDIDO,
 PED_PCT_REL  AS(
 SELECT PE.ID_PEDIDO,A.ID_PEDIDO PCT_REL_ID_PEDIDO FROM PEDID A
             INNER JOIN PED PE ON A.PEDCODIGO=PE.PEDIDO_REL AND A.CLICODIGO=PE.CLICODIGO
-            INNER JOIN (SELECT ID_PEDIDO FROM PEDID WHERE PEDDTEMIS BETWEEN '01.04.2023' AND '30.04.2023') P 
-             ON A.ID_PEDIDO=P.ID_PEDIDO),
+            INNER JOIN PEDID_DATE PT ON A.ID_PEDIDO=PT.ID_PEDIDO),
                                   
                                   
 P_PACOTES AS  (
@@ -218,9 +220,9 @@ SELECT PCT.ID_PEDIDO,
                                     WHERE MATERIA_PRIMA IS NOT NULL
                                     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13),                                  
                                   
--- SERVIÇOS     
+-- SELECT SERVIÇOS     
                                
-      PROD_S AS (SELECT PROCODIGO,IIF(PROCODIGO2 IS NULL,PROCODIGO,PROCODIGO2)CHAVE,PROTIPO FROM PRODU WHERE PROTIPO IN ('T','M','S','C') AND PROSITUACAO='A'),
+      PROD_S AS (SELECT PROCODIGO,IIF(PROCODIGO2 IS NULL,PROCODIGO,PROCODIGO2)CHAVE,PROTIPO FROM PRODU WHERE PROTIPO IN ('T','M','S','C','K','X') AND PROSITUACAO='A'),
                          
       DF_S AS  (
          SELECT PD.ID_PEDIDO,
@@ -252,7 +254,9 @@ SELECT DS.*,
                                                
                                  
                                  
--- UNION =======================================================================
+-- UNION ALL SELECTS =======================================================================
+
+
 
 SELECT * FROM LA 
 UNION
