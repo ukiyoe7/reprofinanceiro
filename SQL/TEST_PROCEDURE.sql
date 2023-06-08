@@ -21,7 +21,7 @@ begin
  where p.procodigo is not null
 and p.ProSituacao = 'A'
  and p.ProTipo <> 'R'
- and p.ProCodigo IN  ('BOOG450')
+ and p.ProCodigo IN  ('BAWT8550')
  and p.proctrest = 'S'
  order by p.procodigo
  into :sprocodigo, :sprodescricao, :sproun do
