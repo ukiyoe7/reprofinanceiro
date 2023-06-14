@@ -44,11 +44,13 @@ WITH
                        PROUN,
                         MARCA,
                          GRUPO1,
-                      SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
+                          PROTIPO,
+                          SUM(PDPQTDADE)QTD,
+                           SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
                                 FROM PDPRD PD
                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                   LEFT JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
                                    
                                    
                                    
