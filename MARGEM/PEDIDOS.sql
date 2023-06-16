@@ -33,7 +33,8 @@ WITH
                              LEFT JOIN GRUPO1 G1 ON G1.GR1CODIGO=P.GR1CODIGO)
 
       SELECT PD.ID_PEDIDO,
-              CLICODIGO COD_CLIENTE,
+              FISCODIGO CFOP,
+               CLICODIGO COD_CLIENTE,
                 CLIRAZSOCIAL,                
                  GCLCODIGO COD_GRUPO,
                   GCLNOME NOME_GRUPO,
@@ -50,7 +51,7 @@ WITH
                                 FROM PDPRD PD
                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                   LEFT JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
                                    
                                    
                                    
