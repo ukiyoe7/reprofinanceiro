@@ -1,3 +1,7 @@
+## EXTRACAO DE BASE PARA CALCULO DE MARGEM
+## SANDRO JAKOSKA
+## 06.2023
+
 
 ## LOAD =============================================================
 
@@ -17,32 +21,26 @@ View(query_ped)
 
 query_ped %>% summarize(v=sum(VRVENDA))
 
-## composicao
-
-query_compo_full <- dbGetQuery(con2, statement = read_file('MARGEM/COMPOSICAO_FULL.sql'))
-View(query_compo_full)
+query_ped %>% summarize(v=sum(VRVENDA_LIQUIDA))
 
 
 ## promo
 query_promo <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO.sql')) %>% 
                  mutate(PAR_PROMO=1)
-View(query_promo)
+
 
 ## preco medio
 query_preco_medio <- dbGetQuery(con2, statement = read_file('MARGEM/PREMP.sql'))
 
-View(query_preco_medio)
+
 
 ##control
 query_control <- dbGetQuery(con2, statement = read_file('MARGEM/CONTROL.sql'))
 
-View(query_control)
 
 #produto
 
 query_produto <- dbGetQuery(con2, statement = read_file('MARGEM/PRODUTO.sql'))
-
-View(query_produto)
 
 
 ## LENTES ACABADAS  ================================================
@@ -50,15 +48,15 @@ View(query_produto)
 corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")  
 
 pedidos_LA <- 
-query_ped %>% 
+  query_ped %>% 
    filter(GRUPO1=="LENTES ACABADAS") %>% 
-       select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
-        left_join(.,query_preco_medio,by="PROCODIGO") %>% 
-          rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
-           group_by(ID_PEDIDO,CHAVE) %>% 
-            summarize(QTD=sum(QTD),CUSTO_MEDIO=mean(CUSTO_MEDIO)) %>% 
-             mutate(MATERIA_PRIMA_CHAVE=CHAVE) %>%  
-              rename(MP_QTD=QTD) %>% .[,corder]
+    select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
+     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
+       rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
+        group_by(ID_PEDIDO,CHAVE) %>% 
+         summarize(QTD=sum(QTD),CUSTO_MEDIO=mean(CUSTO_MEDIO)) %>% 
+          mutate(MATERIA_PRIMA_CHAVE=CHAVE) %>%  
+           rename(MP_QTD=QTD) %>% .[,corder]
 
 View(pedidos_LA)
 
@@ -72,7 +70,7 @@ corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")
 
 
 pedidos_LP2 <- 
-inner_join(pedidos_LP,query_ped %>% filter(PROTIPO %in% c('P','F','E')) %>% 
+inner_join(pedidos_LP,query_ped %>% filter(PROTIPO %in% c('P','F','E')) %>% ## JOIN
              distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>%  .[,corder]
 
 View(pedidos_LP2)
@@ -85,7 +83,7 @@ corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")
 pedidos_prod_ext <- 
   query_ped %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
    filter(GRUPO1=="LT PROD. EXTERNA") %>% 
-    left_join(.,query_preco_medio,by="PROCODIGO") %>% 
+    left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
       rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
        select(ID_PEDIDO,CHAVE,CUSTO_MEDIO,QTD) %>% 
         mutate(MATERIA_PRIMA_CHAVE=CHAVE) %>% 
@@ -100,13 +98,13 @@ pedidos_prod_ext <-
  
  pedidos_blocos <- 
    query_ped %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
-   filter(GRUPO1=="BLOCOS") %>% 
-   left_join(.,query_preco_medio,by="PROCODIGO") %>% 
-   rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
-   group_by(ID_PEDIDO,CHAVE) %>% summarize(QTD=sum(QTD),CUSTO_MEDIO=mean(CUSTO_MEDIO)) %>% 
-   select(ID_PEDIDO,CHAVE,CUSTO_MEDIO,QTD) %>% 
-   mutate(MATERIA_PRIMA_CHAVE=CHAVE) %>% 
-   rename(MP_QTD=QTD) %>%  .[,corder]
+    filter(GRUPO1=="BLOCOS") %>% 
+     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
+       rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
+        group_by(ID_PEDIDO,CHAVE) %>% summarize(QTD=sum(QTD),CUSTO_MEDIO=mean(CUSTO_MEDIO)) %>% 
+         select(ID_PEDIDO,CHAVE,CUSTO_MEDIO,QTD) %>% 
+          mutate(MATERIA_PRIMA_CHAVE=CHAVE) %>% 
+           rename(MP_QTD=QTD) %>%  .[,corder]
  
  
  View(pedidos_blocos)
@@ -129,9 +127,9 @@ corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")
 
 
 pedidos_control3 <- 
-  left_join(pedidos_control2,query_ped %>% 
+  left_join(pedidos_control2,query_ped %>% ## JOIN
               filter(PROTIPO %in% c('P','F','E')) %>% 
-              distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>%  
+              distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>%  ## JOIN
                filter(!str_detect(CHAVE,"LA")) %>% 
                 filter(!is.na(MATERIA_PRIMA_CHAVE)) %>% 
                 .[,corder]
@@ -154,13 +152,13 @@ query_pedidos_min <- dbGetQuery(con2,"SELECT ID_PEDIDO ID_PEDIDO_REL,PEDCODIGO P
 
 
 query_pedidos_pacotes_inner <-
-   inner_join(query_pedidos_min,query_pedidos_pacotes, by=c("PEDIDO_REL","CLICODIGO"))
+   inner_join(query_pedidos_min,query_pedidos_pacotes, by=c("PEDIDO_REL","CLICODIGO")) ## JOIN
 
 
 View(query_pedidos_pacotes_inner)
 
 pedidos_pacotes <-
-left_join(query_pedidos_pacotes_inner,query_compo,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) %>% 
+left_join(query_pedidos_pacotes_inner,query_compo,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) %>% ## JOIN
   filter(!is.na(MATERIA_PRIMA_CHAVE)) 
 
 pedidos_pacotes2 <- pedidos_pacotes %>% 
@@ -184,7 +182,7 @@ View(pedidos_pacotes3)
 
 
 pedidos_pacotes_control <-
-  left_join(query_pedidos_pacotes_inner,query_compo,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) %>% 
+  left_join(query_pedidos_pacotes_inner,query_compo,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) %>% ## JOIN
   filter(is.na(MATERIA_PRIMA_CHAVE)) %>%  .[,c(1,2,3,4)]
 
 
@@ -196,12 +194,12 @@ pedidos_pacotes_control <-
   
   pedidos_pacotes_control2 <-  
   pedidos_pacotes_control %>% 
-    left_join(.,query_pedidos_control,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) 
+    left_join(.,query_pedidos_control,by=c("ID_PEDIDO_REL"="ID_PEDIDO")) ## JOIN
   
   View(pedidos_pacotes_control2)
   
   pedidos_pacotes_control3 <-
-  pedidos_pacotes_control2 %>% left_join(.,query_compo,by=c("ID_PEDIDO_CONTROL"="ID_PEDIDO")) %>% 
+  pedidos_pacotes_control2 %>% left_join(.,query_compo,by=c("ID_PEDIDO_CONTROL"="ID_PEDIDO")) %>% ## JOIN
     filter(!is.na(MATERIA_PRIMA_CHAVE)) %>% select(ID_PEDIDO,MATERIA_PRIMA_CHAVE,CUSTO_MEDIO,MP_QTD)
     
   
@@ -210,9 +208,9 @@ pedidos_pacotes_control <-
   corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")  
   
   pedidos_pacotes_control4 <- 
-    left_join(pedidos_pacotes_control3,query_ped %>% 
+    left_join(pedidos_pacotes_control3,query_ped %>% ## JOIN
                 filter(PROTIPO %in% c('P','F','E')) %>% 
-                distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>% .[,corder]
+                 distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>% .[,corder]
   
   
   View(pedidos_pacotes_control4)
@@ -249,23 +247,27 @@ pedidos <- query_ped %>%
                       PROUN,
                        MARCA,
                         GRUPO1,
-                         PROTIPO) %>% summarize(VRVENDA=sum(VRVENDA),QTD=sum(QTD))
+                         PROTIPO) %>% 
+                          summarize(ICMS=sum(PDPVRICMS),
+                                     PIS=sum(PDPVRPIS),
+                                      COFINS=sum(PDPVRCOFINS),
+                                       VRVENDA_LIQUIDA=sum(VRVENDA_LIQUIDA), 
+                                        VRVENDA=sum(VRVENDA),
+                                         QTD=sum(QTD))
 
 view(pedidos)
   
 
-
-
 pedidos2 <-  
-left_join(pedidos,pedidos_mp,by=c("ID_PEDIDO","CHAVE"))
+left_join(pedidos,pedidos_mp,by=c("ID_PEDIDO","CHAVE")) ## JOIN
 
 View(pedidos2)
 
 pedidos_lentes <-
   pedidos2 %>% filter(PROTIPO %in% c('F','E','P')) %>% 
                 filter(GRUPO1!='ACESSORIOS') %>% 
-                 left_join(.,query_promo,by="ID_PEDIDO") %>% 
-                   left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) 
+                 left_join(.,query_promo,by="ID_PEDIDO") %>% ## JOIN
+                   left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
                  
 
 pedidos_lentes %>% as.data.frame() %>% filter(!is.na(MATERIA_PRIMA_CHAVE)) %>% summarize(v=sum(VRVENDA))
@@ -297,7 +299,12 @@ pedidos_servicos <- query_ped %>%
                        MARCA,
                         GRUPO1,
                          PROTIPO) %>% 
-                          summarize(VRVENDA=sum(VRVENDA),QTD=sum(QTD)) %>%  
+                          summarize(ICMS=sum(PDPVRICMS),
+                           PIS=sum(PDPVRPIS),
+                            COFINS=sum(PDPVRCOFINS),
+                             VRVENDA_LIQUIDA=sum(VRVENDA_LIQUIDA), 
+                              VRVENDA=sum(VRVENDA),
+                               QTD=sum(QTD)) %>% 
                            
 mutate(MATERIA_PRIMA_CHAVE='',MP_QTD=as.numeric(''),CUSTO_MEDIO=as.numeric('')) %>% left_join(.,query_promo,by="ID_PEDIDO") %>% 
   left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) 
@@ -307,7 +314,7 @@ mutate(MATERIA_PRIMA_CHAVE='',MP_QTD=as.numeric(''),CUSTO_MEDIO=as.numeric('')) 
 ## ordem das colunas
 
 col_order <-
-  c("ID_PEDIDO","CFOP","COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","VRVENDA","QTD","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","PAR_PROMO")
+  c("ID_PEDIDO","CFOP","COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","VRVENDA","QTD","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","PAR_PROMO")
 
 pedidos_lentes2 <- pedidos_lentes %>% .[,col_order]
 
@@ -316,14 +323,14 @@ pedidos_servicos2 <- pedidos_servicos %>% .[,col_order]
 
 ## union
 
-pedidos_union <- union_all(pedidos_lentes2,pedidos_servicos2) %>% 
+pedidos_union <- union_all(pedidos_lentes2,pedidos_servicos2) %>% ## JOIN
   mutate(CHAVE=str_trim(CHAVE),MATERIA_PRIMA_CHAVE=str_trim(MATERIA_PRIMA_CHAVE))
 
 View(pedidos_union)
 
 pedidos_union %>% 
    as.data.frame() %>%  
-    summarize(VRVENDA=sum(VRVENDA))
+    summarize(VRVENDA=sum(VRVENDA),VRVENDA=sum(VRVENDA_LIQUIDA))
 
 ## write csv
 

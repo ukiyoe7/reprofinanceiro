@@ -46,12 +46,16 @@ WITH
                         MARCA,
                          GRUPO1,
                           PROTIPO,
-                          SUM(PDPQTDADE)QTD,
-                           SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA
+                           PDPVRICMS,
+                            PDPVRPIS,
+                             PDPVRCOFINS,
+                           SUM(PDPQTDADE)QTD,
+                            SUM(PDPUNITLIQUIDO*PDPQTDADE)VRVENDA,
+                             (SUM(PDPUNITLIQUIDO*PDPQTDADE)-PDPVRICMS-PDPVRPIS-PDPVRCOFINS)VRVENDA_LIQUIDA
                                 FROM PDPRD PD
                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                   LEFT JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
                                    
                                    
                                    
