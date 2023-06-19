@@ -286,7 +286,12 @@ View(pedidos_lentes %>% filter(is.na(MATERIA_PRIMA_CHAVE)))
 ## servicos
 
 pedidos_servicos <- query_ped %>% 
-              filter(GRUPO1 %in% c('SERVI\xc7OS','ACESSORIOS','DIVERSOS','INSUMOS','SERV. DIVERSOS','SERV. DIVERSOS')) %>% 
+              filter(GRUPO1 %in% c('SERVI\xc7OS',
+                                     'ACESSORIOS',
+                                       'DIVERSOS',
+                                         'INSUMOS',
+                                           'SERV. DIVERSOS',
+                                             'SERV. DIVERSOS')) %>% 
                group_by(ID_PEDIDO,
                 CFOP,        
                 COD_CLIENTE,
