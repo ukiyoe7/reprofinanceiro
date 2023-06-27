@@ -24,10 +24,6 @@ query_ped %>% summarize(v=sum(VRVENDA))
 query_ped %>% summarize(v=sum(VRVENDA_LIQUIDA))
 
 
-## promo
-query_promo <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO.sql')) %>% 
-                 mutate(PAR_PROMO=1)
-
 
 ## preco medio
 query_preco_medio <- dbGetQuery(con2, statement = read_file('MARGEM/PREMP.sql'))
@@ -42,6 +38,10 @@ query_control <- dbGetQuery(con2, statement = read_file('MARGEM/CONTROL.sql'))
 
 query_produto <- dbGetQuery(con2, statement = read_file('MARGEM/PRODUTO.sql'))
 
+## PROMO  ================================================
+
+query_promo2 <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO2.sql')) %>% 
+  mutate(CUPOM = str_extract(CUPOM, "\\b\\d\\w{9}\\b"))
 
 ## LENTES ACABADAS  ================================================
 
@@ -379,9 +379,9 @@ left_join(pedidos,pedidos_mp,by=c("ID_PEDIDO","CHAVE")) ## JOIN
 
 pedidos_lentes <-
   pedidos2 %>% filter(PROTIPO %in% c('F','E','P')) %>% 
-                filter(GRUPO1!='ACESSORIOS') %>% 
-                 left_join(.,query_promo,by="ID_PEDIDO") %>% ## JOIN
-                   left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
+                 filter(GRUPO1!='ACESSORIOS') %>% 
+                     left_join(.,query_promo2,by="ID_PEDIDO") %>% ## JOIN PROMO
+                       left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
         
 
 
@@ -394,31 +394,33 @@ View(pedidos_lentes %>% filter(is.na(MATERIA_PRIMA_CHAVE)))
 
 ## merge all
 servicos_preco_med <-    
-  rbind(pedidos_trat,
-         pedidos_mont,
-          pedidos_serv_div,
-           pedidos_insumos,
-            pedidos_color,
-             pedidos_serv,
-              pedidos_div) 
+               rbind(pedidos_trat,
+                  pedidos_mont,
+                     pedidos_serv_div,
+                         pedidos_insumos,
+                            pedidos_color,
+                               pedidos_serv,
+                                   pedidos_div) 
 
 View(servicos_preco_med)
 
 # join pedidos
 servicos_insumos <-
-inner_join(pedidos,servicos_preco_med,by=c("ID_PEDIDO","CHAVE"))
+inner_join(pedidos,servicos_preco_med,by=c("ID_PEDIDO","CHAVE")) %>% 
+  left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
 
 View(servicos_insumos)
                             
 
 ## union FINAL ======================================================
 
-pedidos_union <- union_all(pedidos_lentes2,servicos_insumos) %>% ## JOIN
+pedidos_union <- union_all(pedidos_lentes,servicos_insumos) %>% ## JOIN
   mutate(CHAVE=str_trim(CHAVE),MATERIA_PRIMA_CHAVE=str_trim(MATERIA_PRIMA_CHAVE))
 
 ## ordem das colunas
+
 col_order <-
-  c("COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","ID_PEDIDO","CFOP","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","QTD","VRVENDA","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","PAR_PROMO")
+  c("COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","ID_PEDIDO","CFOP","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","QTD","VRVENDA","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","DESCRICAO_PROMO","CUPOM")
 
 pedidos_union2 <- pedidos_union %>% .[,col_order]
 
