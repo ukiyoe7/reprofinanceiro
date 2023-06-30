@@ -17,6 +17,14 @@ con2 <- dbConnect(odbc::odbc(), "reproreplica")
 ## pedidos
 query_ped <- dbGetQuery(con2, statement = read_file('MARGEM/PEDIDOS.sql'))
 
+
+query_ped %>% 
+  as.data.frame() %>%  
+  summarize(VRVENDA=sum(VRVENDA))
+
+
+write.csv2(query_ped,file = "query_ped.csv")
+
 ## preco medio
 query_preco_medio <- dbGetQuery(con2, statement = read_file('MARGEM/PREMP.sql'))
 
@@ -39,7 +47,9 @@ query_pedidos_pacotes <- dbGetQuery(con2, statement = read_file('MARGEM/PEDIDOS_
 ## PROMO  ================================================
 
 query_promo2 <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO2.sql')) %>% 
-  mutate(CUPOM = str_extract(CUPOM, "\\b\\d\\w{9}\\b"))
+  mutate(CUPOM_OBS = str_extract(CUPOM_OBS, "\\b\\d\\w{9}\\b")) %>% 
+  mutate(CUPOM = coalesce(CUPOM_PLUGIN, CUPOM_OBS)) %>% 
+  mutate(CUPONS_DIF= if_else(CUPOM_PLUGIN!=CUPOM_OBS,1,0))
 
 ## ORDEM COLUNAS ==============================================
 
@@ -313,14 +323,15 @@ pedidos1 <- query_ped %>%
                           summarize(ICMS=sum(PDPVRICMS),PIS=sum(PDPVRPIS),COFINS=sum(PDPVRCOFINS),VRVENDA=sum(VRVENDA),VRVENDA_LIQUIDA=sum(VRVENDA_LIQUIDA),QTD=sum(QTD)) %>% as.data.frame()
 
 pedidos2 <-  
-left_join(pedidos1,pedidos_mp,by=c("ID_PEDIDO","CHAVE")) ## JOIN
+left_join(pedidos1,pedidos_mp,by=c("ID_PEDIDO","CHAVE")) %>% 
+  left_join(.,query_promo2,by="ID_PEDIDO") %>% ## JOIN PROMO
+  left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN## JOIN
 
 
 pedidos_lentes <-
   pedidos2 %>% filter(PROTIPO %in% c('F','E','P')) %>% 
-                 filter(GRUPO1!='ACESSORIOS') %>% 
-                     left_join(.,query_promo2,by="ID_PEDIDO") %>% ## JOIN PROMO
-                       left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
+                 filter(GRUPO1!='ACESSORIOS')
+                     
         
 
 ## JOIN SERVICOS ==========================================
@@ -339,7 +350,7 @@ servicos_preco_med <-
 
 # join pedidos
 servicos_insumos <-
-inner_join(pedidos,servicos_preco_med,by=c("ID_PEDIDO","CHAVE")) %>% 
+inner_join(pedidos1,servicos_preco_med,by=c("ID_PEDIDO","CHAVE")) %>% 
   left_join(.,query_produto,by=c("CHAVE"="PROCODIGO")) ## JOIN
 
                             
@@ -347,12 +358,12 @@ inner_join(pedidos,servicos_preco_med,by=c("ID_PEDIDO","CHAVE")) %>%
 ## union FINAL ======================================================
 
 pedidos_union <- union_all(pedidos_lentes,servicos_insumos) %>% ## JOIN
-  mutate(CHAVE=str_trim(CHAVE),MATERIA_PRIMA_CHAVE=str_trim(MATERIA_PRIMA_CHAVE))
+  mutate(CHAVE=str_trim(CHAVE),MATERIA_PRIMA_CHAVE=str_trim(MATERIA_PRIMA_CHAVE)) %>% distinct(.)
 
 ## ordem final das colunas
 
 col_order <-
-  c("COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","ID_PEDIDO","CFOP","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","QTD","VRVENDA","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","DESCRICAO_PROMO","CUPOM")
+  c("COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","ID_PEDIDO","CFOP","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","QTD","VRVENDA","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","DESCRICAO_PROMO","CUPOM","CUPONS_DIF")
 
 pedidos_union2 <- pedidos_union %>% .[,col_order]
 
@@ -360,14 +371,15 @@ pedidos_union2 <- pedidos_union %>% .[,col_order]
 View(pedidos_union2)
 
 
-pedidos_union2 %>% 
+pedidos_union2  %>% 
    as.data.frame() %>%  
     summarize(VRVENDA=sum(VRVENDA))
 
 
+
 ## write csv ==================================================
 
-write.csv2(pedidos_union2,file = "C:\\Users\\Repro\\Documents\\FINANCEIRO\\MARGEM\\pedidos.csv",row.names = FALSE)
+write.csv2(pedidos_union2,file = "C:\\Users\\Repro\\Documents\\FINANCEIRO\\MARGEM\\query_ped.csv",row.names = FALSE)
 
 
 
