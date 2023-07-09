@@ -8,6 +8,7 @@
 library(DBI)
 library(tidyverse)
 library(readr)
+library(lubridate)
 
 con2 <- dbConnect(odbc::odbc(), "reproreplica")
 
@@ -17,15 +18,9 @@ con2 <- dbConnect(odbc::odbc(), "reproreplica")
 ## pedidos
 query_ped <- dbGetQuery(con2, statement = read_file('MARGEM/PEDIDOS.sql'))
 
+query_ped2 <- query_ped  %>%  filter(PEDDTBAIXA>=as.Date('2023-06-01') & PEDDTBAIXA<=as.Date('2023-06-30'))
 
-query_ped %>% 
-  as.data.frame() %>%  
-  summarize(VRVENDA=sum(VRVENDA))
-
-
-write.csv2(query_ped,file = "query_ped.csv")
-
-## preco medio
+## precomedio
 query_preco_medio <- dbGetQuery(con2, statement = read_file('MARGEM/PREMP.sql'))
 
 ##control
@@ -58,7 +53,7 @@ corder <- c("ID_PEDIDO","CHAVE","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO")
 ## LENTES ACABADAS  ================================================
 
 pedidos_LA <- 
-  query_ped %>% 
+  query_ped2 %>% 
    filter(GRUPO1=="LENTES ACABADAS") %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
      left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
@@ -72,14 +67,14 @@ pedidos_LA <-
 
 
 pedidos_LP2 <- 
-inner_join(query_compo,query_ped %>% filter(PROTIPO %in% c('P','F','E')) %>% ## JOIN
+inner_join(query_compo,query_ped2 %>% filter(PROTIPO %in% c('P','F','E')) %>% ## JOIN
              distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>%  .[,corder]
 
 
 ## PRODUCAO EXTERNA ================================================
 
 pedidos_prod_ext <- 
-  query_ped %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
+  query_ped2 %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
    filter(GRUPO1=="LT PROD. EXTERNA") %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
       rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -90,7 +85,7 @@ pedidos_prod_ext <-
  ## BLOCOS ================================================
 
  pedidos_blocos <- 
-   query_ped %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
+   query_ped2 %>% mutate(GRUPO1=str_trim(GRUPO1)) %>% 
     filter(GRUPO1=="BLOCOS") %>% 
      left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
        rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -111,7 +106,7 @@ pedidos_control2 <- pedidos_control %>%
 
 
 pedidos_control3 <- 
-  left_join(pedidos_control2,query_ped %>% ## JOIN
+  left_join(pedidos_control2,query_ped2 %>% ## JOIN
               filter(PROTIPO %in% c('P','F','E')) %>% 
               distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>%  ## JOIN
                filter(!str_detect(CHAVE,"LA")) %>% 
@@ -138,7 +133,7 @@ pedidos_pacotes2 <- pedidos_pacotes %>%
    
 
 pedidos_pacotes3 <- 
-left_join(pedidos_pacotes2,query_ped %>% 
+left_join(pedidos_pacotes2,query_ped2 %>% 
             filter(PROTIPO %in% c('P','F','E')) %>% 
              distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO")  %>% .[,corder] 
 
@@ -167,7 +162,7 @@ pedidos_pacotes_control <-
 
   
   pedidos_pacotes_control4 <- 
-    left_join(pedidos_pacotes_control3,query_ped %>% ## JOIN
+    left_join(pedidos_pacotes_control3,query_ped2 %>% ## JOIN
                 filter(PROTIPO %in% c('P','F','E')) %>% 
                  distinct(ID_PEDIDO,CHAVE),by="ID_PEDIDO") %>% .[,corder]
   
@@ -176,11 +171,11 @@ pedidos_pacotes_control <-
   
   
   pedidos_profog <- 
-    query_ped %>% filter(substr(CHAVE,1,4)=='TROP') %>% select(ID_PEDIDO)
+    query_ped2 %>% filter(substr(CHAVE,1,4)=='TROP') %>% select(ID_PEDIDO)
   
   
   pedidos_profog2 <-  
-            query_ped %>% inner_join(.,pedidos_profog,by="ID_PEDIDO") %>% 
+            query_ped2 %>% inner_join(.,pedidos_profog,by="ID_PEDIDO") %>% 
               filter(PROTIPO %in% c('P','F','E')) %>% 
                 left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
                    rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -193,7 +188,7 @@ pedidos_pacotes_control <-
   
   
   pedidos_acessorios_E <-  
-    query_ped %>% 
+    query_ped2 %>% 
     filter(PROTIPO=='E') %>% 
     filter(GRUPO1=="ACESSORIOS") %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN
@@ -208,7 +203,7 @@ pedidos_pacotes_control <-
 
     
 pedidos_trat <-  
-query_ped %>% filter(PROTIPO=='T') %>% 
+query_ped2 %>% filter(PROTIPO=='T') %>% 
   select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
   left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
   rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -221,7 +216,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## MONTAGENS ================================================
   
   pedidos_mont <-  
-    query_ped %>% filter(PROTIPO=='M') %>% 
+    query_ped2 %>% filter(PROTIPO=='M') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -233,7 +228,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## SERVICOS DIVERSOS ================================================
 
   pedidos_serv_div <-  
-    query_ped %>% filter(PROTIPO=='X') %>% 
+    query_ped2 %>% filter(PROTIPO=='X') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -245,7 +240,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## SERVICOS INSUMO ================================================
   
   pedidos_insumos <-  
-    query_ped %>% filter(PROTIPO=='W') %>% 
+    query_ped2 %>% filter(PROTIPO=='W') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -258,7 +253,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## COLORACAO ================================================
 
   pedidos_color <-  
-    query_ped %>% filter(PROTIPO=='C') %>% 
+    query_ped2 %>% filter(PROTIPO=='C') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -271,7 +266,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## SERVICOS ================================================
   
   pedidos_serv <-  
-    query_ped %>% filter(PROTIPO=='S') %>% 
+    query_ped2 %>% filter(PROTIPO=='S') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -284,7 +279,7 @@ query_ped %>% filter(PROTIPO=='T') %>%
 ## DIVERSOS ================================================
 
   pedidos_div <-  
-    query_ped %>% filter(PROTIPO=='K') %>% 
+    query_ped2 %>% filter(PROTIPO=='K') %>% 
     select(ID_PEDIDO,PROCODIGO,CHAVE,QTD) %>% 
     left_join(.,query_preco_medio,by="PROCODIGO") %>% ## JOIN 
     rename(CUSTO_MEDIO=PREPCOMEDIO) %>% 
@@ -307,7 +302,7 @@ pedidos_mp <-
             pedidos_profog2)  
   
 
-pedidos1 <- query_ped %>% 
+pedidos1 <- query_ped2 %>% 
             group_by(ID_PEDIDO,
              CFOP,
               COD_CLIENTE,
@@ -355,10 +350,15 @@ inner_join(pedidos1,servicos_preco_med,by=c("ID_PEDIDO","CHAVE")) %>%
 
                             
 
-## union FINAL ======================================================
+## UNION  ======================================================
 
 pedidos_union <- union_all(pedidos_lentes,servicos_insumos) %>% ## JOIN
   mutate(CHAVE=str_trim(CHAVE),MATERIA_PRIMA_CHAVE=str_trim(MATERIA_PRIMA_CHAVE)) %>% distinct(.)
+
+
+
+
+
 
 ## ordem final das colunas
 
@@ -366,14 +366,6 @@ col_order <-
   c("COD_CLIENTE","CLIRAZSOCIAL","COD_GRUPO","NOME_GRUPO","ID_PEDIDO","CFOP","PEDDTBAIXA","CHAVE","DESCRICAO_CHAVE","PROUN","MARCA","GRUPO1","PROTIPO","QTD","VRVENDA","ICMS","PIS","COFINS","VRVENDA_LIQUIDA","MATERIA_PRIMA_CHAVE","MP_QTD","CUSTO_MEDIO","DESCRICAO_PROMO","CUPOM","CUPONS_DIF")
 
 pedidos_union2 <- pedidos_union %>% .[,col_order]
-
-
-View(pedidos_union2)
-
-
-pedidos_union2  %>% 
-   as.data.frame() %>%  
-    summarize(VRVENDA=sum(VRVENDA))
 
 
 

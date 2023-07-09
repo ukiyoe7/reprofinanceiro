@@ -17,9 +17,29 @@ con2 <- dbConnect(odbc::odbc(), "reproreplica")
 ## MEU 1 varilux ================================================
 
 ## pedidos
-query_promo2 <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO2.sql'))
+query_promo2 <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO2.sql')) 
 
-View(query_promo2)
+
+query_promo3 <- 
+query_promo2 %>% 
+ 
+  mutate(CUPOM_OBS = str_extract(CUPOM_OBS, "\\b\\d\\w{9}\\b")) %>% 
+  mutate(CUPOM = coalesce(CUPOM_PLUGIN, CUPOM_OBS)) %>% 
+  mutate(CUPONS_DIF= if_else(CUPOM_PLUGIN!=CUPOM_OBS,1,0))
+  
+
+
+View(query_promo3)
+
+mutate(CHECK = if_else(is.na(CUPOM_PLUGIN) & is.na(CUPOM_OBS), 
+                       NA, if_else(!is.na(CUPOM_PLUGIN), CUPOM_PLUGIN, CUPOM_OBS)))
+
+
+
+query_promo_obser <- dbGetQuery(con2, statement = read_file('MARGEM/PROMO_OBSER.sql')) %>% 
+  mutate(CUPOM = str_extract(CUPOM, "\\b\\d\\w{9}\\b"))
+
+View(query_promo_obser)
 
 
 
@@ -68,6 +88,7 @@ query_pedidos_pap <- dbGetQuery(con2,"
                                         INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                         INNER JOIN PROD PR ON PR.PROCODIGO=PD.PROCODIGO
                                         GROUP BY 1,2,3
+                                        HAVING SUM(PDPUNITLIQUIDO*PDPQTDADE)=1
                                         ")
 
 View(query_pedidos_pap)
@@ -77,3 +98,10 @@ anti_join(
   query_pedidos_pap,
   inner_join(query_pedidos_min2,ped_1_vlx,by="ID_PEDIDO"),by="ID_PEDIDO") %>% View()
 
+
+## cupons
+
+
+query_cupons <- dbGetQuery(con2,"SELECT * FROM PEDIDPROMO")
+
+View(query_cupons)

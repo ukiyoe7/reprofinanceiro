@@ -20,7 +20,7 @@ WITH
                             FROM PEDID P
                              
                               LEFT JOIN CLI C ON P.CLICODIGO=C.CLICODIGO
-                               WHERE PEDDTBAIXA BETWEEN '01.05.2023' AND '31.05.2023' AND PEDSITPED<>'C'),
+                               WHERE PEDDTBAIXA >=DATEADD(-90 DAY TO CURRENT_DATE) AND PEDSITPED<>'C'),
 
 
       PROD AS (SELECT PROCODIGO,
@@ -55,8 +55,8 @@ WITH
                                 FROM PDPRD PD
                                  INNER JOIN PED P ON PD.ID_PEDIDO=P.ID_PEDIDO
                                   INNER JOIN FIS ON PD.FISCODIGO=FIS.FISCODIGO
-                                  LEFT JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
-                                   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+                                   LEFT JOIN PROD PR ON PD.PROCODIGO=PR.PROCODIGO
+                                    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
                                    
                                    
                                    

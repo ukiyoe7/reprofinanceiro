@@ -6,7 +6,7 @@ SELECT P.ID_PEDIDO,
          REPLACE(PEDCODIGO,'.001','.000') PEDIDO_REL
                             FROM PEDID P
                                WHERE  
-                               PEDDTBAIXA BETWEEN '01.05.2023' AND '31.05.2023' AND
+                               PEDDTBAIXA >=DATEADD(-90 DAY TO CURRENT_DATE) AND
                                PEDSITPED<>'C')
                                
 SELECT * FROM PED

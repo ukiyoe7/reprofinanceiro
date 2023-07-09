@@ -1,7 +1,7 @@
 WITH PED AS (
 SELECT P.ID_PEDIDO FROM PEDID P
                                WHERE  
-                               PEDDTBAIXA BETWEEN '01.05.2023' AND '31.05.2023'),
+                               PEDDTBAIXA BETWEEN '01.01.2023' AND 'YESTERDAY'),
 
 CONTROLA  AS(
 SELECT A.ID_PEDIDO,MAX(APCODIGO)APCODIGO FROM ACOPED A
